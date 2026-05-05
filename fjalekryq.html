@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fjalëkryq – Fizikë</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --ink: #1a1a2e;
+    --accent: #c0392b;
+    --gold: #e8a020;
+    --cell: #ffffff;
+    --border: #1a1a2e;
+    --correct: #27ae60;
+    --wrong: #e74c3c;
+    --clue-bg: #1a1a2e;
+    --clue-text: #f5f0e8;
+    --highlight: #fde68a;
+    --active: #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  header h1 span {
+    color: var(--accent);
+  }
+
+  header p {
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #666;
+    margin-top: 0.4rem;
+    font-weight: 500;
+  }
+
+  .red-line {
+    width: 60px;
+    height: 4px;
+    background: var(--accent);
+    margin: 0.8rem auto;
+  }
+
+  .layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ─── GRID ─── */
+  .grid-wrap {
+    background: var(--cell);
+    border: 3px solid var(--border);
+    box-shadow: 8px 8px 0 var(--ink);
+    padding: 1.2rem;
+    overflow-x: auto;
+  }
+
+  #crossword-grid {
+    display: grid;
+    gap: 2px;
+    /* columns/rows set by JS */
+  }
+
+  .cell {
+    width: 38px;
+    height: 38px;
+    background: transparent;
+  }
+
+  .cell.active-cell {
+    background: var(--ink);
+    position: relative;
+  }
+
+  .cell.active-cell input {
+    background: var(--cell);
+    color: var(--ink);
+  }
+
+  .cell.active-cell.highlighted input {
+    background: var(--highlight);
+  }
+
+  .cell.active-cell.selected input {
+    background: var(--active);
+  }
+
+  .cell.active-cell.correct input {
+    background: #d4edda;
+    color: var(--correct);
+    font-weight: 700;
+  }
+
+  .cell.active-cell.wrong input {
+    background: #fde8e8;
+    color: var(--wrong);
+  }
+
+  .cell.active-cell {
+    border: 2px solid var(--border);
+    position: relative;
+  }
+
+  .cell-num {
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .cell input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: transparent;
+    cursor: pointer;
+    caret-color: transparent;
+  }
+
+  /* ─── CLUES ─── */
+  .clues-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 260px;
+    max-width: 360px;
+    flex: 1;
+  }
+
+  .clue-box {
+    background: var(--clue-bg);
+    color: var(--clue-text);
+    border: 2px solid var(--ink);
+    box-shadow: 5px 5px 0 var(--accent);
+    padding: 1.2rem 1.4rem;
+  }
+
+  .clue-box h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 0.5rem;
+    color: var(--gold);
+  }
+
+  .clue-item {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    padding: 0.3rem 0.4rem;
+    border-radius: 2px;
+    transition: background 0.15s;
+    align-items: flex-start;
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .clue-item:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .clue-item.active-clue {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .clue-num {
+    font-weight: 700;
+    min-width: 22px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .clue-item.active-clue .clue-num {
+    color: #fff;
+  }
+
+  /* ─── CONTROLS ─── */
+  .controls {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  button {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.12em;
+    padding: 0.6rem 1.6rem;
+    border: 2.5px solid var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--cell);
+    color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  button:hover {
+    transform: translate(-2px,-2px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  button:active {
+    transform: translate(1px,1px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+
+  #btn-check { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 3px 3px 0 #7b1e14; }
+  #btn-reveal { background: var(--gold); color: var(--ink); border-color: #b8780a; box-shadow: 3px 3px 0 #7a4e00; }
+  #btn-clear { background: var(--clue-bg); color: #fff; border-color: var(--clue-bg); box-shadow: 3px 3px 0 #444; }
+
+  /* ─── TOAST ─── */
+  #toast {
+    display: none;
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.12em;
+    padding: 0.9rem 2rem;
+    border: 2px solid var(--accent);
+    box-shadow: 5px 5px 0 var(--accent);
+    z-index: 999;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  @media (max-width: 700px) {
+    .layout { flex-direction: column; align-items: center; }
+    .clues-wrap { max-width: 100%; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p>Klasa e Fizikës</p>
+  <h1>Fjalë<span>kryq</span></h1>
+  <div class="red-line"></div>
+  <p>Plotëso fjalëkryqin duke klikuar mbi kutitë</p>
+</header>
+
+<div class="layout">
+  <div class="grid-wrap">
+    <div id="crossword-grid"></div>
+  </div>
+
+  <div class="clues-wrap">
+    <div class="clue-box">
+      <h2>Horizontale →</h2>
+      <div id="clues-across"></div>
+    </div>
+    <div class="clue-box">
+      <h2>Vertikale ↓</h2>
+      <div id="clues-down"></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="btn-check">✓ Kontrollo</button>
+  <button id="btn-reveal">◎ Zbulo</button>
+  <button id="btn-clear">↺ Fshij</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CROSSWORD DATA
+//  Grid is 0-indexed (row, col)
+// ═══════════════════════════════════════════════════════
+const ROWS = 15;
+const COLS = 18;
+
+/*
+  Words and their placements derived from the image:
+
+  ACROSS:
+  4. FORCË      → row 6,  col 10, len 5   (FORCA - Tërheqje ose shtytje mbi një trup)
+  6. NXITIM     → row 8,  col 4,  len 10  (NXITIM = nxitimi / acceleration)
+  7. VRULL      → row 10, col 1,  len 8   (MOMENT = masa × shpejtësia)
+  9. PUNË       → row 12, col 6,  len 4   (PUNË = kur një forcë lëviz një objekt)
+
+  DOWN:
+  1. ENERGJI    → row 0,  col 16, len 8
+  2. GRAVITETI  → row 1,  col 9,  len 9
+  3. SHPEJTËSI  → row 3,  col 8,  len 9  (drejtim)
+  4. FUQI       → row 6,  col 10, len 5  (vertical)
+  5. FËRKIMI    → row 6,  col 4,  len 7  (pengon lëvizjen)
+  8. MASA       → row 10, col 2,  len 4
+
+  Let me re-analyze carefully from the image clues and answers:
+
+  Across:
+  4 – Tërheqje ose shtytje mbi një trup  → FORCA  (5 letters)
+  6 – Ndryshimi i shpejtësisë me kohën   → NXITIMI (7 letters)  
+  7 – Masa e një objekti shumëzuar me shpejtësinë e tij → MOMENT (6 letters)
+  9 – Kur një forcë lëviz një objekt     → PUNË (4 letters)
+
+  Down:
+  1 – Aftësia për të bërë punë           → ENERGJI (7 letters)
+  2 – Forca që tërheq trupat drejt Tokës → GRAVITETI (9 letters)
+  3 – Sa shpejt dhe në çfarë drejtimi lëviz → SHPEJTËSI (9 letters? or SHPEJTESIA)
+  4 – Sa punë bëhet për njësi kohe       → FUQI (4 letters)
+  5 – Forca që pengon lëvizjen           → FËRKIMI (7 letters)
+  8 – Sa shumë materie ka një trup       → MASA (4 letters)
+*/
+
+// Final clean word list
+const words = [
+  // ACROSS
+  { num: 4, dir: 'across', row: 6,  col: 5,  answer: 'FORCA',   clue: 'Tërheqje ose shtytje mbi një trup' },
+  { num: 6, dir: 'across', row: 8,  col: 2,  answer: 'NXITIMI', clue: 'Ndryshimi i shpejtësisë me kohën' },
+  { num: 7, dir: 'across', row: 10, col: 0,  answer: 'MOMENT',  clue: 'Masa e një objekti shumëzuar me shpejtësinë e tij' },
+  { num: 9, dir: 'across', row: 12, col: 5,  answer: 'PUNE',    clue: 'Kur një forcë lëviz një objekt' },
+
+  // DOWN
+  { num: 1, dir: 'down',   row: 0,  col: 14, answer: 'ENERGJI',   clue: 'Aftësia për të bërë punë' },
+  { num: 2, dir: 'down',   row: 0,  col: 9,  answer: 'GRAVITETI', clue: 'Forca që tërheq trupat drejt Tokës' },
+  { num: 3, dir: 'down',   row: 2,  col: 8,  answer: 'SHPEJTESI', clue: 'Sa shpejt dhe në çfarë drejtimi lëviz një trup' },
+  { num: 4, dir: 'down',   row: 6,  col: 5,  answer: 'FUQI',      clue: 'Sa punë bëhet për njësi kohe' },
+  { num: 5, dir: 'down',   row: 5,  col: 3,  answer: 'FERKIMI',   clue: 'Forca që pengon lëvizjen' },
+  { num: 8, dir: 'down',   row: 10, col: 1,  answer: 'MASA',      clue: 'Sa shumë materie ka një trup' },
+];
+
+// Build cell map
+const cellMap = {}; // "r,c" -> { letter, wordNums[], blocked:false }
+
+function key(r, c) { return `${r},${c}`; }
+
+// Mark cells used by words
+words.forEach(w => {
+  for (let i = 0; i < w.answer.length; i++) {
+    const r = w.dir === 'across' ? w.row : w.row + i;
+    const c = w.dir === 'across' ? w.col + i : w.col;
+    const k = key(r, c);
+    if (!cellMap[k]) cellMap[k] = { letter: w.answer[i], nums: [], r, c };
+    // cross-check: if letter already set, verify it matches
+    cellMap[k].letter = w.answer[i]; // last write wins (should be same letter at intersections)
+    cellMap[k].nums.push({ num: w.num, dir: w.dir });
+  }
+});
+
+// Assign starting cell numbers
+const startNums = {}; // "r,c" -> number
+words.forEach(w => {
+  const k = key(w.row, w.col);
+  if (!startNums[k]) startNums[k] = w.num;
+});
+
+// ─── Build Grid DOM ───
+const grid = document.getElementById('crossword-grid');
+grid.style.gridTemplateColumns = `repeat(${COLS}, 38px)`;
+grid.style.gridTemplateRows    = `repeat(${ROWS}, 38px)`;
+
+const inputMap = {}; // "r,c" -> input element
+
+for (let r = 0; r < ROWS; r++) {
+  for (let c = 0; c < COLS; c++) {
+    const k = key(r, c);
+    const div = document.createElement('div');
+    div.className = 'cell';
+    if (cellMap[k]) {
+      div.classList.add('active-cell');
+      div.dataset.r = r;
+      div.dataset.c = c;
+
+      if (startNums[k] !== undefined) {
+        const num = document.createElement('span');
+        num.className = 'cell-num';
+        num.textContent = startNums[k];
+        div.appendChild(num);
+      }
+
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.maxLength = 1;
+      inp.autocomplete = 'off';
+      inp.dataset.r = r;
+      inp.dataset.c = c;
+      div.appendChild(inp);
+      inputMap[k] = inp;
+    }
+    grid.appendChild(div);
+  }
+}
+
+// ─── State ───
+let activeWord = null; // { num, dir }
+let activeCell = null; // "r,c"
+
+function getWordCells(num, dir) {
+  const w = words.find(x => x.num === num && x.dir === dir);
+  if (!w) return [];
+  const cells = [];
+  for (let i = 0; i < w.answer.length; i++) {
+    const r = w.dir === 'across' ? w.row : w.row + i;
+    const c = w.dir === 'across' ? w.col + i : w.col;
+    cells.push(key(r, c));
+  }
+  return cells;
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.highlighted, .selected').forEach(el => {
+    el.classList.remove('highlighted', 'selected');
+  });
+  document.querySelectorAll('.active-clue').forEach(el => el.classList.remove('active-clue'));
+}
+
+function activateWord(num, dir, focusKey) {
+  clearHighlights();
+  activeWord = { num, dir };
+  const cells = getWordCells(num, dir);
+  cells.forEach(k => {
+    const inp = inputMap[k];
+    if (inp) inp.parentElement.classList.add('highlighted');
+  });
+  if (focusKey && inputMap[focusKey]) {
+    inputMap[focusKey].parentElement.classList.add('selected');
+    activeCell = focusKey;
+    inputMap[focusKey].focus();
+  }
+  // highlight clue
+  const clueEl = document.querySelector(`[data-clue="${num}-${dir}"]`);
+  if (clueEl) {
+    clueEl.classList.add('active-clue');
+    clueEl.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+// Click handler
+Object.entries(inputMap).forEach(([k, inp]) => {
+  inp.addEventListener('click', () => {
+    const r = parseInt(inp.dataset.r);
+    const c = parseInt(inp.dataset.c);
+    // Find words at this cell
+    const cell = cellMap[k];
+    if (!cell) return;
+    const wordNums = cell.nums;
+
+    if (activeCell === k && activeWord) {
+      // toggle direction
+      const others = wordNums.filter(x => !(x.num === activeWord.num && x.dir === activeWord.dir));
+      if (others.length > 0) {
+        activateWord(others[0].num, others[0].dir, k);
+        return;
+      }
+    }
+    // default: pick first word
+    if (wordNums.length > 0) {
+      activateWord(wordNums[0].num, wordNums[0].dir, k);
+    }
+  });
+
+  inp.addEventListener('keydown', e => {
+    if (!activeWord) return;
+    const r = parseInt(inp.dataset.r);
+    const c = parseInt(inp.dataset.c);
+
+    if (e.key === 'Backspace') {
+      if (inp.value !== '') {
+        inp.value = '';
+      } else {
+        // move back
+        moveCursor(r, c, -1);
+      }
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 'ArrowRight') { tryActivateDir(r, c, 'across'); e.preventDefault(); return; }
+    if (e.key === 'ArrowLeft')  { tryActivateDir(r, c, 'across'); e.preventDefault(); return; }
+    if (e.key === 'ArrowDown')  { tryActivateDir(r, c, 'down');   e.preventDefault(); return; }
+    if (e.key === 'ArrowUp')    { tryActivateDir(r, c, 'down');   e.preventDefault(); return; }
+    if (e.key === 'Tab') { e.preventDefault(); cycleWord(e.shiftKey ? -1 : 1); return; }
+  });
+
+  inp.addEventListener('input', e => {
+    const val = inp.value.replace(/[^a-zA-ZëÇçëËÄäÜü]/g, '').toUpperCase().slice(-1);
+    inp.value = val;
+    if (val && activeWord) {
+      const r = parseInt(inp.dataset.r);
+      const c = parseInt(inp.dataset.c);
+      moveCursor(r, c, 1);
+    }
+  });
+});
+
+function tryActivateDir(r, c, dir) {
+  const k = key(r, c);
+  const cell = cellMap[k];
+  if (!cell) return;
+  const match = cell.nums.find(x => x.dir === dir);
+  if (match) activateWord(match.num, match.dir, k);
+}
+
+function moveCursor(r, c, delta) {
+  if (!activeWord) return;
+  const cells = getWordCells(activeWord.num, activeWord.dir);
+  const k = key(r, c);
+  const idx = cells.indexOf(k);
+  const next = cells[idx + delta];
+  if (next && inputMap[next]) {
+    const cell = cellMap[next];
+    activeCell = next;
+    inputMap[next].parentElement.classList.remove('selected');
+    cells.forEach(ck => {
+      if (inputMap[ck]) inputMap[ck].parentElement.classList.add('highlighted');
+    });
+    inputMap[next].parentElement.classList.add('selected');
+    inputMap[next].focus();
+  }
+}
+
+function cycleWord(delta) {
+  const across = words.filter(w => w.dir === 'across');
+  const down   = words.filter(w => w.dir === 'down');
+  const all = [...across, ...down];
+  if (!activeWord) { activateWord(all[0].num, all[0].dir, key(all[0].row, all[0].col)); return; }
+  const idx = all.findIndex(w => w.num === activeWord.num && w.dir === activeWord.dir);
+  const next = all[(idx + delta + all.length) % all.length];
+  activateWord(next.num, next.dir, key(next.row, next.col));
+}
+
+// ─── Build Clues ───
+function buildClues(dir, containerId) {
+  const container = document.getElementById(containerId);
+  const dirWords = words.filter(w => w.dir === dir);
+  const unique = [];
+  const seen = new Set();
+  dirWords.forEach(w => {
+    const id = `${w.num}-${w.dir}`;
+    if (!seen.has(id)) { seen.add(id); unique.push(w); }
+  });
+  unique.sort((a,b) => a.num - b.num).forEach(w => {
+    const div = document.createElement('div');
+    div.className = 'clue-item';
+    div.dataset.clue = `${w.num}-${w.dir}`;
+    div.innerHTML = `<span class="clue-num">${w.num}.</span><span>${w.clue}</span>`;
+    div.addEventListener('click', () => {
+      activateWord(w.num, w.dir, key(w.row, w.col));
+    });
+    container.appendChild(div);
+  });
+}
+
+buildClues('across', 'clues-across');
+buildClues('down',   'clues-down');
+
+// ─── Check / Reveal / Clear ───
+document.getElementById('btn-check').addEventListener('click', () => {
+  let correct = 0, wrong = 0, empty = 0;
+  Object.entries(inputMap).forEach(([k, inp]) => {
+    const cell = cellMap[k];
+    const parent = inp.parentElement;
+    parent.classList.remove('correct','wrong');
+    if (inp.value === '') { empty++; return; }
+    if (inp.value === cell.letter) { parent.classList.add('correct'); correct++; }
+    else { parent.classList.add('wrong'); wrong++; }
+  });
+  const total = Object.keys(inputMap).length;
+  if (correct === total) {
+    showToast('🎉 Të gjitha përgjigjet janë të sakta!');
+  } else {
+    showToast(`✓ ${correct} saktë  ✗ ${wrong} gabim  ○ ${empty} bosh`);
+  }
+});
+
+document.getElementById('btn-reveal').addEventListener('click', () => {
+  Object.entries(inputMap).forEach(([k, inp]) => {
+    const cell = cellMap[k];
+    inp.value = cell.letter;
+    inp.parentElement.classList.add('correct');
+    inp.parentElement.classList.remove('wrong');
+  });
+  showToast('Të gjitha përgjigjet u zbuluan!');
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  Object.values(inputMap).forEach(inp => {
+    inp.value = '';
+    inp.parentElement.classList.remove('correct','wrong');
+  });
+  clearHighlights();
+  activeWord = null;
+  activeCell = null;
+  showToast('Fjalëkryqi u fshi!');
+});
+
+// ─── Toast ───
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = 'none'; }, 2800);
+}
+
+// Start with first word highlighted
+setTimeout(() => activateWord(4, 'across', key(6, 5)), 100);
+</script>
+</body>
+</html>

@@ -36,7 +36,7 @@
     content: '';
     position: fixed;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctave[...]
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctave='4'%3E%3C/feTurbulence%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
     pointer-events: none;
     z-index: 0;
   }
@@ -100,7 +100,8 @@
   #crossword-grid {
     display: grid;
     gap: 2px;
-    /* columns/rows set by JS */
+    grid-template-columns: repeat(18, 38px);
+    grid-template-rows: repeat(15, 38px);
   }
 
   .cell {
@@ -337,79 +338,48 @@
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-//  CROSSWORD DATA
-//  Grid is 0-indexed (row, col)
-// ═══════════════════════════════════════════════════════
 const ROWS = 15;
 const COLS = 18;
 
-/*
-  Layout from image analysis:
-  
-  ACROSS:
-  4. FORCA       → row 6,  col 10, len 5   (Tërheqje ose shtytje mbi një trup)
-  6. NXITIM      → row 8,  col 4,  len 10  (Ndryshimi i shpejtësisë me kohën)
-  7. VRULL       → row 10, col 1,  len 8   (Masa e një objekti shumëzuar me shpejtësinë e tij)
-  9. PUNE        → row 12, col 6,  len 4   (Kur një forcë lëviz një objekt)
-
-  DOWN:
-  1. ENERGJI     → row 0,  col 16, len 8   (Aftësia për të bërë punë)
-  2. GRAVITETI   → row 1,  col 9,  len 9   (Forca që tërheq trupat drejt Tokës)
-  3. SHPEJTESI   → row 3,  col 8,  len 9   (Sa shpejt dhe në çfarë drejtimi lëviz një trup)
-  4. FUQI        → row 6,  col 10, len 5   (Sa punë bëhet për njësi kohe)
-  5. FERKIMI     → row 5,  col 3,  len 7   (Forca që pengon lëvizjen)
-  8. MASA        → row 10, col 1,  len 4   (Sa shumë materie ka një trup)
-*/
-
-// Final clean word list matching the image layout
 const words = [
   // ACROSS
-  { num: 4, dir: 'across', row: 6,  col: 10, answer: 'FORCA',   clue: 'Tërheqje ose shtytje mbi një trup' },
-  { num: 6, dir: 'across', row: 8,  col: 4,  answer: 'NXITIM',  clue: 'Ndryshimi i shpejtësisë me kohën' },
-  { num: 7, dir: 'across', row: 10, col: 1,  answer: 'VRULL',   clue: 'Masa e një objekti shumëzuar me shpejtësinë e tij' },
-  { num: 9, dir: 'across', row: 12, col: 6,  answer: 'PUNE',    clue: 'Kur një forcë lëviz një objekt' },
+  { num: 4, dir: 'across', row: 6,  col: 5,  answer: 'FORCA',   clue: 'Tërheqje ose shtytje mbi një trup' },
+  { num: 6, dir: 'across', row: 8,  col: 2,  answer: 'NXITIMI', clue: 'Ndryshimi i shpejtësisë me kohën' },
+  { num: 7, dir: 'across', row: 10, col: 0,  answer: 'MOMENT',  clue: 'Masa e një objekti shumëzuar me shpejtësinë e tij' },
+  { num: 9, dir: 'across', row: 12, col: 5,  answer: 'PUNE',    clue: 'Kur një forcë lëviz një objekt' },
 
   // DOWN
-  { num: 1, dir: 'down',   row: 0,  col: 16, answer: 'ENERGJI',   clue: 'Aftësia për të bërë punë' },
-  { num: 2, dir: 'down',   row: 1,  col: 9,  answer: 'GRAVITETI', clue: 'Forca që tërheq trupat drejt Tokës' },
-  { num: 3, dir: 'down',   row: 3,  col: 8,  answer: 'SHPEJTESI', clue: 'Sa shpejt dhe në çfarë drejtimi lëviz një trup' },
-  { num: 4, dir: 'down',   row: 6,  col: 10, answer: 'FUQI',      clue: 'Sa punë bëhet për njësi kohe' },
+  { num: 1, dir: 'down',   row: 0,  col: 14, answer: 'ENERGJI',   clue: 'Aftësia për të bërë punë' },
+  { num: 2, dir: 'down',   row: 0,  col: 9,  answer: 'GRAVITETI', clue: 'Forca që tërheq trupat drejt Tokës' },
+  { num: 3, dir: 'down',   row: 2,  col: 8,  answer: 'SHPEJTESI', clue: 'Sa shpejt dhe në çfarë drejtimi lëviz një trup' },
+  { num: 4, dir: 'down',   row: 6,  col: 5,  answer: 'FUQI',      clue: 'Sa punë bëhet për njësi kohe' },
   { num: 5, dir: 'down',   row: 5,  col: 3,  answer: 'FERKIMI',   clue: 'Forca që pengon lëvizjen' },
   { num: 8, dir: 'down',   row: 10, col: 1,  answer: 'MASA',      clue: 'Sa shumë materie ka një trup' },
 ];
 
-// Build cell map
-const cellMap = {}; // "r,c" -> { letter, wordNums[], blocked:false }
+const cellMap = {};
 
 function key(r, c) { return `${r},${c}`; }
 
-// Mark cells used by words
 words.forEach(w => {
   for (let i = 0; i < w.answer.length; i++) {
     const r = w.dir === 'across' ? w.row : w.row + i;
     const c = w.dir === 'across' ? w.col + i : w.col;
     const k = key(r, c);
     if (!cellMap[k]) cellMap[k] = { letter: w.answer[i], nums: [], r, c };
-    // cross-check: if letter already set, verify it matches
-    cellMap[k].letter = w.answer[i]; // last write wins (should be same letter at intersections)
+    cellMap[k].letter = w.answer[i];
     cellMap[k].nums.push({ num: w.num, dir: w.dir });
   }
 });
 
-// Assign starting cell numbers
-const startNums = {}; // "r,c" -> number
+const startNums = {};
 words.forEach(w => {
   const k = key(w.row, w.col);
   if (!startNums[k]) startNums[k] = w.num;
 });
 
-// ─── Build Grid DOM ───
 const grid = document.getElementById('crossword-grid');
-grid.style.gridTemplateColumns = `repeat(${COLS}, 38px)`;
-grid.style.gridTemplateRows    = `repeat(${ROWS}, 38px)`;
-
-const inputMap = {}; // "r,c" -> input element
+const inputMap = {};
 
 for (let r = 0; r < ROWS; r++) {
   for (let c = 0; c < COLS; c++) {
@@ -441,9 +411,8 @@ for (let r = 0; r < ROWS; r++) {
   }
 }
 
-// ─── State ───
-let activeWord = null; // { num, dir }
-let activeCell = null; // "r,c"
+let activeWord = null;
+let activeCell = null;
 
 function getWordCells(num, dir) {
   const w = words.find(x => x.num === num && x.dir === dir);
@@ -477,7 +446,6 @@ function activateWord(num, dir, focusKey) {
     activeCell = focusKey;
     inputMap[focusKey].focus();
   }
-  // highlight clue
   const clueEl = document.querySelector(`[data-clue="${num}-${dir}"]`);
   if (clueEl) {
     clueEl.classList.add('active-clue');
@@ -485,25 +453,19 @@ function activateWord(num, dir, focusKey) {
   }
 }
 
-// Click handler
 Object.entries(inputMap).forEach(([k, inp]) => {
   inp.addEventListener('click', () => {
-    const r = parseInt(inp.dataset.r);
-    const c = parseInt(inp.dataset.c);
-    // Find words at this cell
     const cell = cellMap[k];
     if (!cell) return;
     const wordNums = cell.nums;
 
     if (activeCell === k && activeWord) {
-      // toggle direction
       const others = wordNums.filter(x => !(x.num === activeWord.num && x.dir === activeWord.dir));
       if (others.length > 0) {
         activateWord(others[0].num, others[0].dir, k);
         return;
       }
     }
-    // default: pick first word
     if (wordNums.length > 0) {
       activateWord(wordNums[0].num, wordNums[0].dir, k);
     }
@@ -518,16 +480,13 @@ Object.entries(inputMap).forEach(([k, inp]) => {
       if (inp.value !== '') {
         inp.value = '';
       } else {
-        // move back
         moveCursor(r, c, -1);
       }
       e.preventDefault();
       return;
     }
-    if (e.key === 'ArrowRight') { tryActivateDir(r, c, 'across'); e.preventDefault(); return; }
-    if (e.key === 'ArrowLeft')  { tryActivateDir(r, c, 'across'); e.preventDefault(); return; }
-    if (e.key === 'ArrowDown')  { tryActivateDir(r, c, 'down');   e.preventDefault(); return; }
-    if (e.key === 'ArrowUp')    { tryActivateDir(r, c, 'down');   e.preventDefault(); return; }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { tryActivateDir(r, c, 'across'); e.preventDefault(); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { tryActivateDir(r, c, 'down'); e.preventDefault(); return; }
     if (e.key === 'Tab') { e.preventDefault(); cycleWord(e.shiftKey ? -1 : 1); return; }
   });
 
@@ -557,7 +516,6 @@ function moveCursor(r, c, delta) {
   const idx = cells.indexOf(k);
   const next = cells[idx + delta];
   if (next && inputMap[next]) {
-    const cell = cellMap[next];
     activeCell = next;
     inputMap[next].parentElement.classList.remove('selected');
     cells.forEach(ck => {
@@ -570,7 +528,7 @@ function moveCursor(r, c, delta) {
 
 function cycleWord(delta) {
   const across = words.filter(w => w.dir === 'across');
-  const down   = words.filter(w => w.dir === 'down');
+  const down = words.filter(w => w.dir === 'down');
   const all = [...across, ...down];
   if (!activeWord) { activateWord(all[0].num, all[0].dir, key(all[0].row, all[0].col)); return; }
   const idx = all.findIndex(w => w.num === activeWord.num && w.dir === activeWord.dir);
@@ -578,7 +536,6 @@ function cycleWord(delta) {
   activateWord(next.num, next.dir, key(next.row, next.col));
 }
 
-// ─── Build Clues ───
 function buildClues(dir, containerId) {
   const container = document.getElementById(containerId);
   const dirWords = words.filter(w => w.dir === dir);
@@ -601,9 +558,8 @@ function buildClues(dir, containerId) {
 }
 
 buildClues('across', 'clues-across');
-buildClues('down',   'clues-down');
+buildClues('down', 'clues-down');
 
-// ─── Check / Reveal / Clear ───
 document.getElementById('btn-check').addEventListener('click', () => {
   let correct = 0, wrong = 0, empty = 0;
   Object.entries(inputMap).forEach(([k, inp]) => {
@@ -643,7 +599,6 @@ document.getElementById('btn-clear').addEventListener('click', () => {
   showToast('Fjalëkryqi u fshi!');
 });
 
-// ─── Toast ───
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -652,8 +607,7 @@ function showToast(msg) {
   t._timer = setTimeout(() => { t.style.display = 'none'; }, 2800);
 }
 
-// Start with first word highlighted
-setTimeout(() => activateWord(4, 'across', key(6, 10)), 100);
+setTimeout(() => activateWord(4, 'across', key(6, 5)), 100);
 </script>
 </body>
 </html>

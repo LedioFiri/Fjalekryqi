@@ -36,7 +36,7 @@
     content: '';
     position: fixed;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctave[...]
     pointer-events: none;
     z-index: 0;
   }
@@ -345,52 +345,36 @@ const ROWS = 15;
 const COLS = 18;
 
 /*
-  Words and their placements derived from the image:
-
+  Layout from image analysis:
+  
   ACROSS:
-  4. FORCË      → row 6,  col 10, len 5   (FORCA - Tërheqje ose shtytje mbi një trup)
-  6. NXITIM     → row 8,  col 4,  len 10  (NXITIM = nxitimi / acceleration)
-  7. VRULL      → row 10, col 1,  len 8   (MOMENT = masa × shpejtësia)
-  9. PUNË       → row 12, col 6,  len 4   (PUNË = kur një forcë lëviz një objekt)
+  4. FORCA       → row 6,  col 10, len 5   (Tërheqje ose shtytje mbi një trup)
+  6. NXITIM      → row 8,  col 4,  len 10  (Ndryshimi i shpejtësisë me kohën)
+  7. VRULL       → row 10, col 1,  len 8   (Masa e një objekti shumëzuar me shpejtësinë e tij)
+  9. PUNE        → row 12, col 6,  len 4   (Kur një forcë lëviz një objekt)
 
   DOWN:
-  1. ENERGJI    → row 0,  col 16, len 8
-  2. GRAVITETI  → row 1,  col 9,  len 9
-  3. SHPEJTËSI  → row 3,  col 8,  len 9  (drejtim)
-  4. FUQI       → row 6,  col 10, len 5  (vertical)
-  5. FËRKIMI    → row 6,  col 4,  len 7  (pengon lëvizjen)
-  8. MASA       → row 10, col 2,  len 4
-
-  Let me re-analyze carefully from the image clues and answers:
-
-  Across:
-  4 – Tërheqje ose shtytje mbi një trup  → FORCA  (5 letters)
-  6 – Ndryshimi i shpejtësisë me kohën   → NXITIMI (7 letters)  
-  7 – Masa e një objekti shumëzuar me shpejtësinë e tij → MOMENT (6 letters)
-  9 – Kur një forcë lëviz një objekt     → PUNË (4 letters)
-
-  Down:
-  1 – Aftësia për të bërë punë           → ENERGJI (7 letters)
-  2 – Forca që tërheq trupat drejt Tokës → GRAVITETI (9 letters)
-  3 – Sa shpejt dhe në çfarë drejtimi lëviz → SHPEJTËSI (9 letters? or SHPEJTESIA)
-  4 – Sa punë bëhet për njësi kohe       → FUQI (4 letters)
-  5 – Forca që pengon lëvizjen           → FËRKIMI (7 letters)
-  8 – Sa shumë materie ka një trup       → MASA (4 letters)
+  1. ENERGJI     → row 0,  col 16, len 8   (Aftësia për të bërë punë)
+  2. GRAVITETI   → row 1,  col 9,  len 9   (Forca që tërheq trupat drejt Tokës)
+  3. SHPEJTESI   → row 3,  col 8,  len 9   (Sa shpejt dhe në çfarë drejtimi lëviz një trup)
+  4. FUQI        → row 6,  col 10, len 5   (Sa punë bëhet për njësi kohe)
+  5. FERKIMI     → row 5,  col 3,  len 7   (Forca që pengon lëvizjen)
+  8. MASA        → row 10, col 1,  len 4   (Sa shumë materie ka një trup)
 */
 
-// Final clean word list
+// Final clean word list matching the image layout
 const words = [
   // ACROSS
-  { num: 4, dir: 'across', row: 6,  col: 5,  answer: 'FORCA',   clue: 'Tërheqje ose shtytje mbi një trup' },
-  { num: 6, dir: 'across', row: 8,  col: 2,  answer: 'NXITIMI', clue: 'Ndryshimi i shpejtësisë me kohën' },
-  { num: 7, dir: 'across', row: 10, col: 0,  answer: 'MOMENT',  clue: 'Masa e një objekti shumëzuar me shpejtësinë e tij' },
-  { num: 9, dir: 'across', row: 12, col: 5,  answer: 'PUNE',    clue: 'Kur një forcë lëviz një objekt' },
+  { num: 4, dir: 'across', row: 6,  col: 10, answer: 'FORCA',   clue: 'Tërheqje ose shtytje mbi një trup' },
+  { num: 6, dir: 'across', row: 8,  col: 4,  answer: 'NXITIM',  clue: 'Ndryshimi i shpejtësisë me kohën' },
+  { num: 7, dir: 'across', row: 10, col: 1,  answer: 'VRULL',   clue: 'Masa e një objekti shumëzuar me shpejtësinë e tij' },
+  { num: 9, dir: 'across', row: 12, col: 6,  answer: 'PUNE',    clue: 'Kur një forcë lëviz një objekt' },
 
   // DOWN
-  { num: 1, dir: 'down',   row: 0,  col: 14, answer: 'ENERGJI',   clue: 'Aftësia për të bërë punë' },
-  { num: 2, dir: 'down',   row: 0,  col: 9,  answer: 'GRAVITETI', clue: 'Forca që tërheq trupat drejt Tokës' },
-  { num: 3, dir: 'down',   row: 2,  col: 8,  answer: 'SHPEJTESI', clue: 'Sa shpejt dhe në çfarë drejtimi lëviz një trup' },
-  { num: 4, dir: 'down',   row: 6,  col: 5,  answer: 'FUQI',      clue: 'Sa punë bëhet për njësi kohe' },
+  { num: 1, dir: 'down',   row: 0,  col: 16, answer: 'ENERGJI',   clue: 'Aftësia për të bërë punë' },
+  { num: 2, dir: 'down',   row: 1,  col: 9,  answer: 'GRAVITETI', clue: 'Forca që tërheq trupat drejt Tokës' },
+  { num: 3, dir: 'down',   row: 3,  col: 8,  answer: 'SHPEJTESI', clue: 'Sa shpejt dhe në çfarë drejtimi lëviz një trup' },
+  { num: 4, dir: 'down',   row: 6,  col: 10, answer: 'FUQI',      clue: 'Sa punë bëhet për njësi kohe' },
   { num: 5, dir: 'down',   row: 5,  col: 3,  answer: 'FERKIMI',   clue: 'Forca që pengon lëvizjen' },
   { num: 8, dir: 'down',   row: 10, col: 1,  answer: 'MASA',      clue: 'Sa shumë materie ka një trup' },
 ];
@@ -669,7 +653,7 @@ function showToast(msg) {
 }
 
 // Start with first word highlighted
-setTimeout(() => activateWord(4, 'across', key(6, 5)), 100);
+setTimeout(() => activateWord(4, 'across', key(6, 10)), 100);
 </script>
 </body>
 </html>

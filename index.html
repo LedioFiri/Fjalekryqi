@@ -31,7 +31,6 @@
     padding: 2rem 1rem 4rem;
   }
 
-  /* Noise texture overlay */
   body::before {
     content: '';
     position: fixed;
@@ -88,7 +87,6 @@
     margin: 0 auto;
   }
 
-  /* ─── GRID ─── */
   .grid-wrap {
     background: var(--cell);
     border: 3px solid var(--border);
@@ -171,7 +169,6 @@
     caret-color: transparent;
   }
 
-  /* ─── CLUES ─── */
   .clues-wrap {
     display: flex;
     flex-direction: column;
@@ -235,7 +232,6 @@
     color: #fff;
   }
 
-  /* ─── CONTROLS ─── */
   .controls {
     display: flex;
     gap: 0.8rem;
@@ -273,7 +269,6 @@
   #btn-reveal { background: var(--gold); color: var(--ink); border-color: #b8780a; box-shadow: 3px 3px 0 #7a4e00; }
   #btn-clear { background: var(--clue-bg); color: #fff; border-color: var(--clue-bg); box-shadow: 3px 3px 0 #444; }
 
-  /* ─── TOAST ─── */
   #toast {
     display: none;
     position: fixed;
@@ -341,21 +336,20 @@
 const ROWS = 15;
 const COLS = 18;
 
-// Words positioned to match image layout exactly
 const words = [
   // ACROSS
-  { num: 4, dir: 'across', row: 4,  col: 9,  answer: 'FORCA',   clue: 'Tërheqje ose shtytje mbi një trup' },
-  { num: 6, dir: 'across', row: 5,  col: 1,  answer: 'NXITIMI', clue: 'Ndryshimi i shpejtësisë me kohën' },
-  { num: 7, dir: 'across', row: 7,  col: 1,  answer: 'VRULL',   clue: 'Masa e një objekti shumëzuar me shpejtësinë e tij' },
-  { num: 9, dir: 'across', row: 10, col: 4,  answer: 'PUNE',    clue: 'Kur një forcë lëviz një objekt' },
+  { num: 4, dir: 'across', row: 3,  col: 8,  answer: 'FORCA',   clue: 'Tërheqje ose shtytje mbi një trup' },
+  { num: 6, dir: 'across', row: 4,  col: 0,  answer: 'NXITIMI', clue: 'Ndryshimi i shpejtësisë me kohën' },
+  { num: 7, dir: 'across', row: 6,  col: 0,  answer: 'MOMENT',  clue: 'Masa e një objekti shumëzuar me shpejtësinë e tij' },
+  { num: 9, dir: 'across', row: 9,  col: 3,  answer: 'PUNE',    clue: 'Kur një forcë lëviz një objekt' },
 
   // DOWN
-  { num: 1, dir: 'down',   row: 0,  col: 15, answer: 'ENERGJI',   clue: 'Aftësia për të bërë punë' },
-  { num: 2, dir: 'down',   row: 1,  col: 9,  answer: 'GRAVITETI', clue: 'Forca që tërheq trupat drejt Tokës' },
-  { num: 3, dir: 'down',   row: 3,  col: 8,  answer: 'SHPEJTESI', clue: 'Sa shpejt dhe në çfarë drejtimi lëviz një trup' },
-  { num: 4, dir: 'down',   row: 4,  col: 9,  answer: 'FUQI',      clue: 'Sa punë bëhet për njësi kohe' },
-  { num: 5, dir: 'down',   row: 4,  col: 3,  answer: 'FERKIMI',   clue: 'Forca që pengon lëvizjen' },
-  { num: 8, dir: 'down',   row: 7,  col: 2,  answer: 'MASA',      clue: 'Sa shumë materie ka një trup' },
+  { num: 1, dir: 'down',   row: 0,  col: 16, answer: 'ENERGJI',   clue: 'Aftësia për të bërë punë' },
+  { num: 2, dir: 'down',   row: 0,  col: 9,  answer: 'GRAVITETI', clue: 'Forca që tërheq trupat drejt Tokës' },
+  { num: 3, dir: 'down',   row: 2,  col: 8,  answer: 'SHPEJTESI', clue: 'Sa shpejt dhe në çfarë drejtimi lëviz një trup' },
+  { num: 4, dir: 'down',   row: 3,  col: 8,  answer: 'FUQI',      clue: 'Sa punë bëhet për njësi kohe' },
+  { num: 5, dir: 'down',   row: 2,  col: 2,  answer: 'FERKIMI',   clue: 'Forca që pengon lëvizjen' },
+  { num: 8, dir: 'down',   row: 6,  col: 1,  answer: 'MASA',      clue: 'Sa shumë materie ka një trup' },
 ];
 
 const cellMap = {};
@@ -608,7 +602,7 @@ function showToast(msg) {
   t._timer = setTimeout(() => { t.style.display = 'none'; }, 2800);
 }
 
-setTimeout(() => activateWord(4, 'across', key(4, 9)), 100);
+setTimeout(() => activateWord(4, 'across', key(3, 8)), 100);
 </script>
 </body>
 </html>
